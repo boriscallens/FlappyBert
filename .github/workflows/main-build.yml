@@ -3,6 +3,9 @@
 # If a tag was used, push to the relevant channels
 name: main
 
+env:
+  NAME: Flappy-Bert
+
 on:
   push:
     branches:
@@ -127,25 +130,25 @@ jobs:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
-          buildName: Pipelines-${{ matrix.targetPlatform }}
+          buildName: ${{ env.NAME}}-${{ matrix.targetPlatform }}
           versioning: Semantic
 
       # Output entire workspace file layout
       - name: List files to be zipped
-        run: ls -R build/${{ matrix.targetPlatform }}/Pipelines-${{ matrix.targetPlatform }}/
+        run: ls -R build/${{ matrix.targetPlatform }}/${{ env.NAME}}-${{ matrix.targetPlatform }}/
 
       # Zip
       - name: Zip build output
         uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r Pipelines-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip build/${{ matrix.targetPlatform }}/Pipelines-${{ matrix.targetPlatform }}/
+          args: zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip build/${{ matrix.targetPlatform }}/${{ env.NAME}}-${{ matrix.targetPlatform }}/
 
       # Output
       - name: Append build result to artifact
         uses: actions/upload-artifact@v2
         with:
-          name: Pipeline-${{ github.sha }}
-          path: Pipelines-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          name: ${{ env.NAME}}-${{ github.sha }}
+          path: ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
           if-no-files-found: error
 
   release:
@@ -156,7 +159,7 @@ jobs:
       - name: Retrieve all build results from artifact
         uses: actions/download-artifact@v2
         with:
-          name: Pipeline-${{ github.sha }}
+          name: ${{ env.NAME}}-${{ github.sha }}
           path: bin
 
       - name: Replace latest pre-release
@@ -171,8 +174,8 @@ jobs:
       - name: Upload webgl to itch.io
         uses: robpc/itchio-upload-action@v1
         with:
-          path: bin/Pipelines-WebGL-${{ needs.build.outputs.version }}.zip
-          project: boersnoes/pipelines
+          path: bin/${{ env.NAME}}-WebGL-${{ needs.build.outputs.version }}.zip
+          project: boersnoes/${{ env.NAME}}
           channel: html5-alpha
           version: ${{ needs.build.outputs.version }}
           api-key: ${{ secrets.ITCHIO_API_KEY }}
