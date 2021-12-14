@@ -19,8 +19,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    # outputs:
-    #   tag-version: ${{ steps.version-tag.outputs.new_tag }}
 
     steps:
       # Checkout (without LFS)
@@ -62,17 +60,6 @@ jobs:
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-      # # Tag
-      # - name: Bump version and push pre-release tag
-      #   id: version-tag
-      #   uses: anothrNick/github-tag-action@1.36.0
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     WITH_V: true
-      #     RELEASE_BRANCHES: "none" # automatic branches should be pre-release. Releases will be made intentionally.
-      #     DEFAULT_BUMP: patch
-      #     PRERELEASE_SUFFIX: "alpha"
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -84,7 +71,7 @@ jobs:
       matrix:
         targetPlatform:
           # - StandaloneOSX # Build a macOS standalone (Intel 64-bit).
-          # - StandaloneWindows # Build a Windows standalone.
+          - StandaloneWindows # Build a Windows standalone.
           # - StandaloneWindows64 # Build a Windows 64-bit standalone.
           # - StandaloneLinux64 # Build a Linux 64-bit standalone.
           # - iOS # Build an iOS player.
@@ -134,21 +121,36 @@ jobs:
           versioning: Semantic
 
       # Output entire workspace file layout
-      - name: List files to be zipped
-        run: ls -R build/${{ matrix.targetPlatform }}/${{ env.NAME}}-${{ matrix.targetPlatform }}/
+      - name: List webgl files to be zipped
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
+        run: ls -R build/WebGL/${{ env.NAME}}-WebGL/
+
+      - name: List non-webgl files to be zipped
+        if: ${{ matrix.targetPlatform != 'WebGL' }}
+        run: ls -R build/${{ matrix.targetPlatform }}/
 
       # Zip
-      - name: Zip build output
+      - name: Zip webgl build output
         uses: montudor/action-zip@v1
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
-          args: zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip build/${{ matrix.targetPlatform }}/${{ env.NAME}}-${{ matrix.targetPlatform }}/
+          args: zip -qq -r ${{ env.NAME}}-WebGL-${{ steps.buildStep.outputs.buildVersion }}.zip build/WebGL/${{ env.NAME}}-WebGL/
 
       # Output
-      - name: Append build result to artifact
+      - name: Append WebGL build result to artifact
         uses: actions/upload-artifact@v2
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          path: ${{ env.NAME}}-WebGL-${{ steps.buildStep.outputs.buildVersion }}.zip
+          if-no-files-found: error
+
+      - name: Append non-WebGL build result to artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ matrix.targetPlatform != 'WebGL' }}
+        with:
+          name: ${{ env.NAME}}-${{ github.sha }}
+          path: build/${{ matrix.targetPlatform }}/
           if-no-files-found: error
 
   release:
@@ -173,6 +175,7 @@ jobs:
 
       - name: Upload webgl to itch.io
         uses: robpc/itchio-upload-action@v1
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
           path: bin/${{ env.NAME}}-WebGL-${{ needs.build.outputs.version }}.zip
           project: boersnoes/${{ env.NAME}}
