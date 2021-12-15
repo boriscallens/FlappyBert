@@ -145,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{env.BIN_Path}}
+          path: ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
           if-no-files-found: error
 
   release:
