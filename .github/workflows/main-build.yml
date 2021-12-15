@@ -123,12 +123,12 @@ jobs:
       - name: Correct path specificaly for WebGL
         if: ${{ matrix.targetPlatform }} == 'WebGL'
         run: |
-          echo "BIN_Path=build/WebGL/$env:NAME-WebGL >> $GITHUB_ENV
+          echo "BIN_Path=build/WebGL/${{ env:NAME }}-WebGL >> $GITHUB_ENV
 
       - name: Path for non-WebGL
         if: ${{ matrix.targetPlatform }} != 'WebGL'
         run: |
-          echo "BIN_Path=build/$matrix:targetPlatform >> $GITHUB_ENV
+          echo "BIN_Path=build/${{ matrix:targetPlatform }} >> $GITHUB_ENV
 
       # Output entire workspace file layout
       - name: List files to be zipped
