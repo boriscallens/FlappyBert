@@ -5,7 +5,7 @@ name: main
 
 env:
   NAME: Flappy-Bert
-  BIN_PATH: build/${{ matrix.targetPlatform }}/
+  BIN_PATH: ""
 
 on:
   push:
@@ -82,8 +82,6 @@ jobs:
       # Checkout (without LFS)
       - name: Checkout repository
         uses: actions/checkout@v2
-        # with:
-        #   ref: 'tags/${{ needs.testAndTag.outputs.tag-version }}'
 
       # Git LFS
       - name: Create LFS file list
@@ -121,11 +119,15 @@ jobs:
           buildName: ${{ env.NAME}}-${{ matrix.targetPlatform }}
           versioning: Semantic
 
-      # Correct path specificaly for WebGL
+      # Set BIN_PATH env var
       - name: Correct path specificaly for WebGL
         if: ${{ matrix.targetPlatform }} == 'WebGL'
         run: |
           ${{env.BIN_Path}}="build/WebGL/${{ env.NAME}}-WebGL/"
+      - name: Path for non-WebGL
+        if: ${{ matrix.targetPlatform }} != 'WebGL'
+        run: |
+          ${{env.BIN_Path}}="build/${{ matrix.targetPlatform }}/"
 
       # Output entire workspace file layout
       - name: List files to be zipped
