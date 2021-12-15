@@ -125,24 +125,24 @@ jobs:
       - name: Correct path specificaly for WebGL
         if: ${{ matrix.targetPlatform }} == 'WebGL'
         run: |
-          ${{BIN_PATH}}="build/WebGL/${{ env.NAME}}-WebGL/"
+          ${{env.BIN_Path}}="build/WebGL/${{ env.NAME}}-WebGL/"
 
       # Output entire workspace file layout
       - name: List files to be zipped
-        run: ls -R ${{BIN_PATH}}
+        run: ls -R ${{env.BIN_Path}}
 
       # Zip
       - name: Zip build output
         uses: montudor/action-zip@v1
         with:
-          args: zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ${{BIN_PATH}}
+          args: zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ${{env.BIN_Path}}
 
       # Output
       - name: Append zipped build result to artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{BIN_PATH}}
+          path: ${{env.BIN_Path}}
           if-no-files-found: error
 
   release:
