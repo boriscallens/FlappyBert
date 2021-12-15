@@ -5,6 +5,7 @@ name: main
 
 env:
   NAME: Flappy-Bert
+  BIN_PATH: build/${{ matrix.targetPlatform }}/
 
 on:
   push:
@@ -120,37 +121,28 @@ jobs:
           buildName: ${{ env.NAME}}-${{ matrix.targetPlatform }}
           versioning: Semantic
 
-      # Output entire workspace file layout
-      - name: List webgl files to be zipped
-        if: ${{ matrix.targetPlatform == 'WebGL' }}
-        run: ls -R build/WebGL/${{ env.NAME}}-WebGL/
+      # Correct path specificaly for WebGL
+      - name: Correct path specificaly for WebGL
+        if: ${{ matrix.targetPlatform }} == 'WebGL'
+        run: |
+          ${{BIN_PATH}}="build/WebGL/${{ env.NAME}}-WebGL/"
 
-      - name: List non-webgl files to be zipped
-        if: ${{ matrix.targetPlatform != 'WebGL' }}
-        run: ls -R build/${{ matrix.targetPlatform }}/
+      # Output entire workspace file layout
+      - name: List files to be zipped
+        run: ls -R ${{BIN_PATH}}
 
       # Zip
-      - name: Zip webgl build output
+      - name: Zip build output
         uses: montudor/action-zip@v1
-        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
-          args: zip -qq -r ${{ env.NAME}}-WebGL-${{ steps.buildStep.outputs.buildVersion }}.zip build/WebGL/${{ env.NAME}}-WebGL/
+          args: zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ${{BIN_PATH}}
 
       # Output
-      - name: Append WebGL build result to artifact
+      - name: Append zipped build result to artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{ env.NAME}}-WebGL-${{ steps.buildStep.outputs.buildVersion }}.zip
-          if-no-files-found: error
-
-      - name: Append non-WebGL build result to artifact
-        uses: actions/upload-artifact@v2
-        if: ${{ matrix.targetPlatform != 'WebGL' }}
-        with:
-          name: ${{ env.NAME}}-${{ github.sha }}
-          path: build/${{ matrix.targetPlatform }}/
+          path: ${{BIN_PATH}}
           if-no-files-found: error
 
   release:
