@@ -137,7 +137,7 @@ jobs:
       - name: Zip output
         run: |
           pushd ${{env.BIN_Path}}
-          zip -qq -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip * --exclude "*_BurstDebugInformation_DoNotShip/*"
+          zip -qq -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ./* --exclude "*_BurstDebugInformation_DoNotShip/*"
           popd
 
       # Output
