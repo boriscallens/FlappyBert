@@ -136,7 +136,7 @@ jobs:
 
       - name: Zip output
         run: zip -qq -r build/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip * --exclude "*_BurstDebugInformation_DoNotShip/*"
-        working-directory: ${{env.BIN_Path}}
+        working-directory: ${{env.BIN_Path}}/
 
       # Output
       - name: Append zipped build result to artifact
