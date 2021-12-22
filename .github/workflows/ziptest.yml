@@ -75,14 +75,16 @@ jobs:
 
       - name: Zip output dryrun
         run: |
-          pushd ${{env.BIN_Path}}
+          pushd ./${{env.BIN_Path}}
+          echo pwd
           echo "${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip"
           ls . -C -g
           popd
+        continue-on-error: true
 
       - name: Zip output
         run: |
-          pushd ${{env.BIN_Path}}
+          pushd ./${{env.BIN_Path}}
           zip -r ${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
           popd
 
@@ -91,5 +93,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          path: ./${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
           if-no-files-found: error
