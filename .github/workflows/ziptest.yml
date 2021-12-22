@@ -23,7 +23,6 @@ jobs:
           # - StandaloneLinux64 # Build a Linux 64-bit standalone.
           # - iOS # Build an iOS player.
           # - Android # Build an Android .apk standalone app.
-          - WebGL # WebGL.
     steps:
       # Checkout (without LFS)
       - name: Checkout repository
