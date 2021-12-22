@@ -1,0 +1,92 @@
+name: ziptest
+
+env:
+  NAME: Flappy-Bert
+  BIN_PATH: ""
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      version: ${{ steps.buildStep.outputs.buildVersion }}
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows # Build a Windows standalone.
+          # - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          # - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          # - iOS # Build an iOS player.
+          # - Android # Build an Android .apk standalone app.
+          - WebGL # WebGL.
+    steps:
+      # Checkout (without LFS)
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Git LFS
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
+        run: |
+          git lfs pull
+          git add .
+          git reset --hard
+
+      # Cache
+      - uses: actions/cache@v2
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Build
+      - name: Build project
+        id: buildStep
+        uses: game-ci/unity-builder@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: ${{ env.NAME}}-${{ matrix.targetPlatform }}
+          versioning: Semantic
+
+      # Set BIN_PATH env var
+      - name: Path for non-WebGL
+        if: ${{ matrix.targetPlatform }} != 'WebGL'
+        run: |
+          echo "BIN_Path=build/${{ matrix.targetPlatform }}" >> $GITHUB_ENV
+
+      # Zip
+      - name: Install zip
+        uses: montudor/action-zip@v1
+
+      - name: Zip output
+        run: |
+          pushd ${{env.BIN_Path}}
+          echo "${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip"
+          ls ./*
+          zip -qq -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ./* --exclude "*_BurstDebugInformation_DoNotShip/*"
+          popd
+
+      # Output
+      - name: Append zipped build result to artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.NAME}}-${{ github.sha }}
+          path: ${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          if-no-files-found: error
