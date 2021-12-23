@@ -85,7 +85,7 @@ jobs:
       - name: Zip output
         run: |
           pushd ./${{env.BIN_Path}}
-          sudo zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
+          zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
           popd
 
       # Output
