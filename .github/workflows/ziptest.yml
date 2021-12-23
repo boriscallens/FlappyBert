@@ -73,21 +73,6 @@ jobs:
       - name: Install zip
         uses: montudor/action-zip@v1
 
-      # - name: Zip output dryrun
-      #   run: |
-      #     pushd ./${{env.BIN_Path}}
-      #     echo $(pwd)
-      #     echo "${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip"
-      #     ls . -C -g
-      #     popd
-      #   continue-on-error: true
-
-      # - name: Zip output
-      #   run: |
-      #     pushd ./${{env.BIN_Path}}
-      #     zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
-      #     popd
-
       - name: Zip output
         run: sudo zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
         working-directory: ./${{env.BIN_Path}}

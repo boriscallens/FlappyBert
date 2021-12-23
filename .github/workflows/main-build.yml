@@ -135,17 +135,15 @@ jobs:
         uses: montudor/action-zip@v1
 
       - name: Zip output
-        run: |
-          pushd ${{env.BIN_Path}}
-          zip -qq -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip ./* --exclude "*_BurstDebugInformation_DoNotShip/*"
-          popd
+        run: sudo zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
+        working-directory: ./${{env.BIN_Path}}
 
       # Output
       - name: Append zipped build result to artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.NAME}}-${{ github.sha }}
-          path: ${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          path: ./${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
           if-no-files-found: error
 
   release:
