@@ -1,36 +1,86 @@
-# This is a basic workflow to help you get started with Actions
+name: ziptest
 
-name: CI
+env:
+  NAME: Flappy-Bert
+  BIN_PATH: ""
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch: {}
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
+    name: Build
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    outputs:
+      version: ${{ steps.buildStep.outputs.buildVersion }}
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - StandaloneWindows # Build a Windows standalone.
+          # - StandaloneWindows64 # Build a Windows 64-bit standalone.
+          # - StandaloneLinux64 # Build a Linux 64-bit standalone.
+          # - iOS # Build an iOS player.
+          # - Android # Build an Android .apk standalone app.
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      # Checkout (without LFS)
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      # Git LFS
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}
+
+      - name: Git LFS Pull
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          git lfs pull
+          git add .
+          git reset --hard
+
+      # Cache
+      - uses: actions/cache@v2
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Build
+      - name: Build project
+        id: buildStep
+        uses: game-ci/unity-builder@v2
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: ${{ env.NAME}}-${{ matrix.targetPlatform }}
+          versioning: Semantic
+
+      # Set BIN_PATH env var
+      - name: Path for non-WebGL
+        if: ${{ matrix.targetPlatform }} != 'WebGL'
+        run: |
+          echo "BIN_Path=build/${{ matrix.targetPlatform }}" >> $GITHUB_ENV
+
+      # Zip
+      - name: Install zip
+        uses: montudor/action-zip@v1
+
+      - name: Zip output
+        run: sudo zip -r ./${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip .
+        working-directory: ./${{env.BIN_Path}}
+
+      # Output
+      - name: Append zipped build result to artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.NAME}}-${{ github.sha }}
+          path: ./${{env.BIN_Path}}/${{ env.NAME}}-${{ matrix.targetPlatform }}-${{ steps.buildStep.outputs.buildVersion }}.zip
+          if-no-files-found: error
